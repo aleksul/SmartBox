@@ -3,11 +3,12 @@
 WIEGAND wg;
 
 #define BUZZER_PIN 9
-#define BUTTON_PIN 7
+#define BUTTON_PIN 8
 #define LED_PIN 4
 #define EEPROM_LENGTH 1024
 #define RELE_1 5
-#define RELE_2 LED_BUILTIN
+#define RELE_2 6
+#define RELE_3 7
 #define RELE_DELAY 5000
 #define BUTTON_DELAY 100
 #define BUTTON_LONG_PRESS_TIME 10000
@@ -27,10 +28,8 @@ void setup() {
   pinMode(LED_PIN, OUTPUT);
   pinMode(RELE_1, OUTPUT);
   pinMode(RELE_2, OUTPUT);
+  pinMode(RELE_3, OUTPUT);
   delay(1000);
-  digitalWrite(RELE_1, HIGH);
-  digitalWrite(RELE_2, HIGH);
-  digitalWrite(LED_PIN, HIGH);
 }
 
 
@@ -40,7 +39,7 @@ void loop() {
     delay(100); //для того чтобы избежать фантомных нажатий
     if(digitalRead(BUTTON_PIN) == HIGH) {
       button_flag = 1;
-      digitalWrite(LED_PIN, LOW);
+      digitalWrite(LED_PIN, HIGH);
       }
   }
 /*--------------------------------------------------------*/   
@@ -86,13 +85,15 @@ void loop() {
     }
 
     if (eeprom_find_same(byte1, byte2, byte3, byte4, byte5) && button_flag == 0 && mastercard_flag == 0 && delete_flag == 0){ //открываем шкаф, если конечно кнопка не была нажата (и другие флаги не стоят)        
-      digitalWrite(RELE_1, LOW);
-      digitalWrite(RELE_2, LOW);
-      digitalWrite(LED_PIN, LOW);
-      delay(RELE_DELAY);
-      digitalWrite(LED_PIN, HIGH);
       digitalWrite(RELE_1, HIGH);
-      digitalWrite(RELE_2, HIGH);      
+      digitalWrite(RELE_2, HIGH);
+      digitalWrite(RELE_3, HIGH);
+      digitalWrite(LED_PIN, HIGH);
+      delay(RELE_DELAY);
+      digitalWrite(LED_PIN, LOW);
+      digitalWrite(RELE_1, LOW);
+      digitalWrite(RELE_2, LOW);   
+      digitalWrite(RELE_3, LOW);    
       }
       
     if (delete_flag == 1){
@@ -104,32 +105,32 @@ void loop() {
       delete_flag = 0;
       mastercard_flag = 0;
       button_flag = 0;
-      digitalWrite(LED_PIN, HIGH);  
+      digitalWrite(LED_PIN, LOW);  
       }
         
     if (mastercard_flag == 1){ //Не важно, была ли нажата кнопка, если флаг уже поставили 
       mastercard_flag = 0;
       button_flag = 0; //обнулим, а то вдруг ее заново нажали
       new_card_write(byte1, byte2, byte3, byte4, byte5);
-      digitalWrite(LED_PIN, HIGH);    
+      digitalWrite(LED_PIN, LOW);    
       } 
              
     if (button_flag == 1) { //кнопка была нажата перед тем как приложили карту?
       //А это карточка одна из первых двух?
       if ((byte1 == EEPROM.read(0) && byte2 == EEPROM.read(1) && byte3 == EEPROM.read(2) && byte4 == EEPROM.read(3) && byte5 == EEPROM.read(4)) || (byte1 == EEPROM.read(5) && byte2 == EEPROM.read(6) && byte3 == EEPROM.read(7) && byte4 == EEPROM.read(8) && byte5 == EEPROM.read(9))){
         mastercard_flag = 1; //если да, то поставим флажочек и подмигнем
-        digitalWrite(LED_PIN, HIGH);
+        digitalWrite(LED_PIN, LOW);
         digitalWrite(BUZZER_PIN, HIGH);
         delay(1000);
-        digitalWrite(LED_PIN, LOW);
+        digitalWrite(LED_PIN, HIGH);
         digitalWrite(BUZZER_PIN, LOW);
         }
       else if (eeprom_5bytes_free(0) || eeprom_5bytes_free(5)){ //а если карточка не подошла, ибо там их вообще нет?
         new_card_write(byte1, byte2, byte3, byte4, byte5);
-        digitalWrite(LED_PIN, HIGH);
+        digitalWrite(LED_PIN, LOW);
         }
       else {
-        digitalWrite(LED_PIN, HIGH);
+        digitalWrite(LED_PIN, LOW);
         }
       button_flag = 0; //как бы там ни было, кнопку надо сбросить      
       }
@@ -161,12 +162,14 @@ void loop() {
     }
 /*-------если память пустая, то хорошая идея открыть замки--------*/
   if (eeprom_last_adress()==0) {
-    digitalWrite(RELE_1, LOW);
-    digitalWrite(RELE_2, LOW);
+    digitalWrite(RELE_1, HIGH);
+    digitalWrite(RELE_2, HIGH);
+    digitalWrite(RELE_3, HIGH);
     }
   else {
-    digitalWrite(RELE_1, HIGH);
-    digitalWrite(RELE_2, HIGH);      
+    digitalWrite(RELE_1, LOW);
+    digitalWrite(RELE_2, LOW);
+    digitalWrite(RELE_3, LOW);       
     }
 /*-----------------------Конец  LOOP-----------------------------*/ 
 }
@@ -225,12 +228,12 @@ void clear_eeprom (void) { //чистит EEPROM
   digitalWrite(BUZZER_PIN, HIGH);
   delay(1000);
   digitalWrite(BUZZER_PIN, LOW);  
-  digitalWrite(LED_PIN, HIGH);
+  digitalWrite(LED_PIN, LOW);
   for (int i = 0; i < 5; i++) {
     delay(1000);
-    digitalWrite(LED_PIN, LOW);
-    delay(1000);
     digitalWrite(LED_PIN, HIGH);
+    delay(1000);
+    digitalWrite(LED_PIN, LOW);
     }
   
 }
@@ -240,7 +243,7 @@ void reset_new_card_mode (void) { //bug fix. сбрасывает режим з�
   if (button_flag_reset_count == BUTTON_RESET_TIME) {
     button_flag_reset_count = 0;
     button_flag = 0;
-    digitalWrite(LED_PIN, HIGH);
+    digitalWrite(LED_PIN, LOW);
     }
   }
   
